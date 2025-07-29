@@ -9,7 +9,7 @@ from plextraktsync.factory import logging
 logger = logging.getLogger(__name__)
 
 class RateLimiter:
-    def __init__(self, calls_per_second=500):
+    def __init__(self, calls_per_second=1000):
         self.calls_per_second = calls_per_second
         self.interval = 1.0 / calls_per_second
         self.last_call_time = 0
