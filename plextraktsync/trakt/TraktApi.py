@@ -58,7 +58,7 @@ class TraktApi:
         return trakt.init(client_id=client_id, client_secret=client_secret, store=True)
 
     @cached_property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def me(self):
@@ -71,7 +71,7 @@ class TraktApi:
             raise ClickException(f"Trakt authentication error: {str(e)}")
 
     @cached_property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     @flatten_list
@@ -86,28 +86,28 @@ class TraktApi:
             yield tll
 
     @cached_property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def watched_movies(self):
         return set(map(lambda m: m.trakt, self.me.watched_movies))
 
     @cached_property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def watch_progress(self):
         return WatchProgress(trakt.sync.get_playback())
 
     @cached_property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def movie_collection(self):
         return self.me.movie_collection
 
     @property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def show_collection(self):
@@ -137,28 +137,28 @@ class TraktApi:
         return set(map(lambda m: m.trakt, self.movie_collection))
 
     @cached_property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def watched_shows(self):
         return pytrakt_extensions.allwatched()
 
     @cached_property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def collected_shows(self):
         return pytrakt_extensions.allcollected()
 
     @property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def watchlist_movies(self):
         return self.me.watchlist_movies
 
     @property
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def watchlist_shows(self):
@@ -180,20 +180,20 @@ class TraktApi:
 
         return self.ratings[m.media_type].get(m.trakt, None)
 
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def get_ratings(self, media_type: str):
         return self.me.get_ratings(media_type)
 
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @time_limit()
     @retry()
     def rate(self, m: TraktMedia, rating: int, rate_date: datetime.datetime = None):
         m.rate(rating, rate_date)
 
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @time_limit()
     @retry()
@@ -294,7 +294,7 @@ class TraktApi:
         except NotFoundException:
             raise RuntimeError(f"Unable to find by slug: {slug}")
 
-    @throttle(calls_per_second=100)
+    @throttle(calls_per_second=10)
     @rate_limit()
     @retry()
     def search_by_id(self, media_id: str, id_type: str, media_type: str) -> TVShow | Movie | None:
