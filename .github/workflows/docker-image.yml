@@ -39,8 +39,9 @@ jobs:
           if [[ "${GITHUB_REF#refs/heads/}" = "${GITHUB_REF}" ]]; then
             APP_VERSION=${GITHUB_REF#refs/tags/}
           else
-            git fetch --tags --unshallow
-            APP_VERSION=$(git describe --tags)_${GITHUB_REF#refs/heads/}
+            git fetch --tags --unshallow || git fetch --tags
+            TAG_VERSION=$(git describe --tags --always)
+            APP_VERSION=${TAG_VERSION}_${GITHUB_REF#refs/heads/}
           fi
           echo "version=$APP_VERSION" >> $GITHUB_OUTPUT
 
