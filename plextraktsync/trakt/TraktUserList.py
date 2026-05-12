@@ -9,6 +9,7 @@ from trakt.tv import TVEpisode, TVSeason, TVShow
 from trakt.users import PublicList, User
 
 from plextraktsync.factory import factory, logging
+from plextraktsync.trakt.oauth import retry_trakt_oauth
 from plextraktsync.trakt.types import TraktPlayable
 
 if TYPE_CHECKING:
@@ -99,6 +100,7 @@ class TraktUserList:
                     result[("episodes", episode.trakt)] = idx + (i * episode_rank)
         return result
 
+    @retry_trakt_oauth
     def load_items(self):
         username = factory.trakt_api.me.username
         if self.list_type == "personal" and self.username == username:

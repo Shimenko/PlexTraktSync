@@ -23,6 +23,7 @@ from plextraktsync.decorators.retry import retry
 from plextraktsync.decorators.time_limit import time_limit
 from plextraktsync.factory import factory, logging
 from plextraktsync.path import pytrakt_file
+from plextraktsync.trakt.oauth import call_with_fresh_trakt_auth, retry_trakt_oauth
 from plextraktsync.trakt.PartialTraktMedia import PartialTraktMedia
 from plextraktsync.trakt.TraktItem import TraktItem
 from plextraktsync.trakt.TraktLookup import TraktLookup
@@ -61,7 +62,7 @@ class TraktApi:
     @retry()
     def me(self):
         try:
-            return trakt.users.User("me")
+            return call_with_fresh_trakt_auth(trakt.users.User, "me")
         except OAuthRefreshException as e:
             self.logger.error(f"{e.error}: {e.error_description}")
             raise ClickException("Trakt error: Unable to refresh token")
@@ -69,6 +70,7 @@ class TraktApi:
             raise ClickException(f"Trakt authentication error: {str(e)}")
 
     @cached_property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     @flatten_list
@@ -84,30 +86,35 @@ class TraktApi:
             yield tll
 
     @cached_property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def watched_movies(self):
         return set(map(lambda m: m.trakt, self.me.watched_movies))
 
     @cached_property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def watch_progress(self):
         return WatchProgress(trakt.sync.get_playback())
 
     @cached_property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def movie_collection(self):
         return self.me.movie_collection
 
     @property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def show_collection(self):
         return self.me.show_collection
 
     @cached_property
+    @retry_trakt_oauth
     @flatten_list
     def episodes_collection(self) -> list[TVEpisode]:
         for show in self.show_collection:
@@ -131,24 +138,28 @@ class TraktApi:
         return set(map(lambda m: m.trakt, self.movie_collection))
 
     @cached_property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def watched_shows(self):
         return pytrakt_extensions.allwatched()
 
     @cached_property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def collected_shows(self):
         return pytrakt_extensions.allcollected()
 
     @property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def watchlist_movies(self):
         return self.me.watchlist_movies
 
     @property
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def watchlist_shows(self):
@@ -170,17 +181,20 @@ class TraktApi:
 
         return self.ratings[m.media_type].get(m.trakt, None)
 
+    @retry_trakt_oauth
     @rate_limit()
     @retry()
     def get_ratings(self, media_type: str):
         return self.me.get_ratings(media_type)
 
+    @retry_trakt_oauth
     @rate_limit()
     @time_limit()
     @retry()
     def rate(self, m: TraktMedia, rating: int, rate_date: datetime.datetime = None):
         m.rate(rating, rate_date)
 
+    @retry_trakt_oauth
     @rate_limit()
     @time_limit()
     @retry()
@@ -281,6 +295,7 @@ class TraktApi:
         except NotFoundException:
             raise RuntimeError(f"find_by_slug: Unable to find with slug: {slug}")
 
+    @retry_trakt_oauth
     @rate_limit()
     def search_by_id(self, media_id: str, id_type: str, media_type: str) -> TVShow | Movie | None:
         if id_type == "tvdb" and media_type == "movie":

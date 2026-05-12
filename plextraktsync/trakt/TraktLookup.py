@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from plextraktsync.decorators.retry import retry
 from plextraktsync.factory import logging
+from plextraktsync.trakt.oauth import retry_trakt_oauth
 
 EPISODES_ORDERING_WARNING = "episodes ordering is different in Plex and Trakt. Check your Plex media source, TMDB is recommended."
 
@@ -27,6 +28,7 @@ class TraktLookup:
         self.same_order = True
 
     @cached_property
+    @retry_trakt_oauth
     @retry()
     def table(self):
         """
