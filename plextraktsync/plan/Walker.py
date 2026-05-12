@@ -131,9 +131,21 @@ class Walker(SetWindowTitle):
             show_cache[show_id] = self.mf.resolve_any(ps)
         self.logger.info(f"Preloaded shows matches ({len(show_cache)} shows)")
 
+        missing_show_ids: set[int] = set()
         async for ep in self.episodes_from_sections(self.plan.show_sections):
             show_id = ep.show_id
-            ep.show = plex_shows[show_id]
+            show_plex = plex_shows.get(show_id)
+            if not show_plex:
+                if show_id not in missing_show_ids:
+                    missing_show_ids.add(show_id)
+                    self.logger.warning(
+                        f"{ep.title_link}: Skipping episode because parent show {show_id} was not found in preloaded shows; "
+                        "it may have been added or removed during sync",
+                        extra={"markup": True},
+                    )
+                continue
+
+            ep.show = show_plex
             show = show_cache.get(show_id)
             m = self.mf.resolve_any(ep, show)
             if not m:
