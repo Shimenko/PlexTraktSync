@@ -29,22 +29,6 @@ class ResponseMock:
         self.headers = {"retry-after": str(retry_after), "x-ratelimit": "{}"}
 
 
-def test_lookup_table_waits_before_fetching_show_seasons(monkeypatch):
-    class ShowMock:
-        title = "Example"
-
-        def __init__(self, seasons):
-            self.seasons = seasons
-
-    calls = []
-    episode = EpisodeMock(2)
-    lookup = TraktLookup(ShowMock([SeasonMock(1, [episode])]))
-    monkeypatch.setattr("plextraktsync.trakt.TraktLookup.wait_for_trakt_get", lambda: calls.append("wait"))
-
-    assert lookup.table == {1: {2: episode}}
-    assert calls == ["wait"]
-
-
 def test_lookup_table_retries_after_rate_limit(monkeypatch):
     class RateLimitedShow:
         title = "Example"
@@ -59,7 +43,6 @@ def test_lookup_table_retries_after_rate_limit(monkeypatch):
 
     sleep_calls = []
     lookup = TraktLookup(RateLimitedShow())
-    monkeypatch.setattr("plextraktsync.trakt.TraktLookup.wait_for_trakt_get", lambda: None)
     monkeypatch.setattr("plextraktsync.decorators.rate_limit.sleep", lambda seconds: sleep_calls.append(seconds))
 
     assert lookup.table[1][1].number == 1

@@ -104,6 +104,15 @@ class Config(ChangeNotifier, ConfigMergeMixin, dict):
 
         return HttpCacheConfig(**cache)
 
+    @property
+    def trakt_rate_limit(self):
+        from plextraktsync.config.TraktRateLimitConfig import TraktRateLimitConfig
+
+        trakt = self["trakt"] if "trakt" in self and self["trakt"] else {}
+        rate_limit = trakt.get("rate_limit") or {}
+
+        return TraktRateLimitConfig(**rate_limit)
+
     def initialize(self):
         """
         Config load order:

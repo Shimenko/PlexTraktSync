@@ -13,6 +13,11 @@ config:
 plex:
   timeout: 30
 
+trakt:
+  rate_limit:
+    # Minimum seconds between live Trakt GET requests.
+    get_delay: 1.0
+
 logging:
   append: true
   # Whether to show timestamps in console messages

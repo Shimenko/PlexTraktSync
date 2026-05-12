@@ -135,7 +135,9 @@ class Factory:
     def session(self):
         from requests_cache import CachedSession
 
-        return CachedSession(
+        from plextraktsync.trakt.TraktRateLimitedAdapter import TraktRateLimitedAdapter, TraktRequestLimiter
+
+        session = CachedSession(
             cache_name=self.config.cache_path,
             # Plex sends "Cache-Control: no-cache" headers to requests we want to cache
             cache_control=False,
@@ -143,6 +145,15 @@ class Factory:
             # Plex doesn't Send Vary: X-Plex-Container-Start
             match_headers=["X-Plex-Container-Start"],
         )
+        session.mount(
+            "https://api.trakt.tv/",
+            TraktRateLimitedAdapter(
+                trakt_request_limiter=TraktRequestLimiter(
+                    get_delay=self.config.trakt_rate_limit.get_delay,
+                ),
+            ),
+        )
+        return session
 
     @cached_property
     def sync(self):

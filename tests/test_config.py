@@ -55,3 +55,29 @@ def test_http_config():
     cache = config.http_cache
     assert cache is not None
     assert cache.policy["a"] == "b"
+
+
+def test_trakt_rate_limit_config_default():
+    from tests.conftest import MOCK_DATA_DIR
+
+    config = Config()
+    config.config_yml = join(MOCK_DATA_DIR, "http_cache-blank.yml")
+
+    assert config.trakt_rate_limit.get_delay == 1.0
+
+
+def test_trakt_rate_limit_config_override(tmp_path):
+    config_file = tmp_path / "config.yml"
+    config_file.write_text("trakt:\n  rate_limit:\n    get_delay: 2.5\n")
+    config = Config(str(config_file))
+
+    assert config.trakt_rate_limit.get_delay == 2.5
+
+
+def test_trakt_rate_limit_config_rejects_non_positive_delay(tmp_path):
+    config_file = tmp_path / "config.yml"
+    config_file.write_text("trakt:\n  rate_limit:\n    get_delay: 0\n")
+    config = Config(str(config_file))
+
+    with pytest.raises(ValueError, match="trakt.rate_limit.get_delay must be a positive number"):
+        _ = config.trakt_rate_limit

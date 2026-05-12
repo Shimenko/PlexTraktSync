@@ -25,45 +25,35 @@ def trakt_api():
         yield TraktApi()
 
 
-@pytest.fixture(autouse=True)
-def wait_for_get():
-    with patch("plextraktsync.trakt.TraktApi.wait_for_trakt_get") as wait:
-        yield wait
-
-
-def test_search_by_id_type_mismatch_returns_none(trakt_api, wait_for_get):
+def test_search_by_id_type_mismatch_returns_none(trakt_api):
     """When the API returns an item whose type differs from the requested type, return None."""
     # Requested "movie" but API returned a "shows" result.
     item = make_trakt_item(media_type="shows", id_type="tmdb", media_id="12345")
     with patch("trakt.sync.search_by_id", return_value=[item]):
         result = trakt_api.search_by_id("12345", id_type="tmdb", media_type="movie")
     assert result is None
-    wait_for_get.assert_called_once_with()
 
 
-def test_search_by_id_id_mismatch_returns_none(trakt_api, wait_for_get):
+def test_search_by_id_id_mismatch_returns_none(trakt_api):
     """When the API returns an item whose id differs from the requested id, return None."""
     # Requested id "12345" but API returned an item with id "99999".
     item = make_trakt_item(media_type="movies", id_type="tmdb", media_id="99999")
     with patch("trakt.sync.search_by_id", return_value=[item]):
         result = trakt_api.search_by_id("12345", id_type="tmdb", media_type="movie")
     assert result is None
-    wait_for_get.assert_called_once_with()
 
 
-def test_search_by_id_matching_returns_item(trakt_api, wait_for_get):
+def test_search_by_id_matching_returns_item(trakt_api):
     """When the API returns an item whose type and id both match, return that item."""
     item = make_trakt_item(media_type="movies", id_type="tmdb", media_id="12345")
     with patch("trakt.sync.search_by_id", return_value=[item]):
         result = trakt_api.search_by_id("12345", id_type="tmdb", media_type="movie")
     assert result is item
-    wait_for_get.assert_called_once_with()
 
 
-def test_search_by_id_invalid_search_does_not_wait_or_call_trakt(trakt_api, wait_for_get):
+def test_search_by_id_invalid_search_does_not_call_trakt(trakt_api):
     with patch("trakt.sync.search_by_id") as search_by_id:
         result = trakt_api.search_by_id("12345", id_type="tvdb", media_type="movie")
 
     assert result is None
-    wait_for_get.assert_not_called()
     search_by_id.assert_not_called()
