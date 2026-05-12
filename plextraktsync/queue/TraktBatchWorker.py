@@ -9,6 +9,7 @@ from plextraktsync.decorators.rate_limit import rate_limit
 from plextraktsync.decorators.retry import retry
 from plextraktsync.decorators.time_limit import time_limit
 from plextraktsync.factory import logging
+from plextraktsync.trakt.oauth import retry_trakt_oauth
 from plextraktsync.util.remove_empty_values import remove_empty_values
 
 
@@ -39,6 +40,7 @@ class TraktBatchWorker:
         if result:
             self.logger.debug(f"Submitted {name}: {result}")
 
+    @retry_trakt_oauth
     @rate_limit()
     @account_limit()
     @time_limit()
@@ -46,12 +48,14 @@ class TraktBatchWorker:
     def add_to_collection(self, items):
         return trakt.sync.add_to_collection(items)
 
+    @retry_trakt_oauth
     @rate_limit()
     @time_limit()
     @retry()
     def remove_from_collection(self, items):
         return trakt.sync.remove_from_collection(items)
 
+    @retry_trakt_oauth
     @rate_limit()
     @account_limit()
     @time_limit()
@@ -59,6 +63,7 @@ class TraktBatchWorker:
     def add_to_watchlist(self, items):
         return trakt.sync.add_to_watchlist(items)
 
+    @retry_trakt_oauth
     @rate_limit()
     @time_limit()
     @retry()

@@ -8,6 +8,7 @@ from plextraktsync.decorators.rate_limit import rate_limit
 from plextraktsync.decorators.retry import retry
 from plextraktsync.decorators.time_limit import time_limit
 from plextraktsync.factory import logging
+from plextraktsync.trakt.oauth import retry_trakt_oauth
 from plextraktsync.util.remove_empty_values import remove_empty_values
 
 
@@ -31,6 +32,7 @@ class TraktMarkWatchedWorker:
         if result:
             self.logger.debug(f"Submitted add_to_history: {result}")
 
+    @retry_trakt_oauth
     @rate_limit()
     @time_limit()
     @retry()
