@@ -21,6 +21,7 @@ from plextraktsync.decorators.flatten import flatten_list
 from plextraktsync.decorators.rate_limit import rate_limit
 from plextraktsync.decorators.retry import retry
 from plextraktsync.decorators.time_limit import time_limit
+from plextraktsync.decorators.trakt_get_limit import wait_for_trakt_get
 from plextraktsync.factory import factory, logging
 from plextraktsync.path import pytrakt_file
 from plextraktsync.trakt.oauth import call_with_fresh_trakt_auth, retry_trakt_oauth
@@ -315,6 +316,7 @@ class TraktApi:
 
             return None
 
+        wait_for_trakt_get()
         search = trakt.sync.search_by_id(media_id, id_type=id_type, media_type=media_type)
         if not search:
             return None

@@ -3,7 +3,9 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from plextraktsync.decorators.rate_limit import rate_limit
 from plextraktsync.decorators.retry import retry
+from plextraktsync.decorators.trakt_get_limit import wait_for_trakt_get
 from plextraktsync.factory import logging
 from plextraktsync.trakt.oauth import retry_trakt_oauth
 
@@ -29,6 +31,7 @@ class TraktLookup:
 
     @cached_property
     @retry_trakt_oauth
+    @rate_limit()
     @retry()
     def table(self):
         """
@@ -37,6 +40,7 @@ class TraktLookup:
         - https://github.com/moogar0880/PyTrakt/pull/185
         """
 
+        wait_for_trakt_get()
         seasons = {}
         for season in self.tm.seasons:
             episodes = {}
