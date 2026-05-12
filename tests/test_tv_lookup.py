@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pytest
+from trakt.errors import RateLimitException
 from trakt.tv import TVShow
 
 from plextraktsync.plex.guid.PlexGuid import PlexGuid
@@ -10,6 +11,60 @@ from plextraktsync.trakt.TraktLookup import TraktLookup
 from tests.conftest import factory, make
 
 trakt = factory.trakt_api
+
+
+class EpisodeMock:
+    def __init__(self, number):
+        self.number = number
+
+
+class SeasonMock:
+    def __init__(self, season, episodes):
+        self.season = season
+        self.episodes = episodes
+
+
+class ResponseMock:
+    def __init__(self, retry_after=0):
+        self.headers = {"retry-after": str(retry_after), "x-ratelimit": "{}"}
+
+
+def test_lookup_table_waits_before_fetching_show_seasons(monkeypatch):
+    class ShowMock:
+        title = "Example"
+
+        def __init__(self, seasons):
+            self.seasons = seasons
+
+    calls = []
+    episode = EpisodeMock(2)
+    lookup = TraktLookup(ShowMock([SeasonMock(1, [episode])]))
+    monkeypatch.setattr("plextraktsync.trakt.TraktLookup.wait_for_trakt_get", lambda: calls.append("wait"))
+
+    assert lookup.table == {1: {2: episode}}
+    assert calls == ["wait"]
+
+
+def test_lookup_table_retries_after_rate_limit(monkeypatch):
+    class RateLimitedShow:
+        title = "Example"
+        calls = 0
+
+        @property
+        def seasons(self):
+            self.calls += 1
+            if self.calls == 1:
+                raise RateLimitException(ResponseMock())
+            return [SeasonMock(1, [EpisodeMock(1)])]
+
+    sleep_calls = []
+    lookup = TraktLookup(RateLimitedShow())
+    monkeypatch.setattr("plextraktsync.trakt.TraktLookup.wait_for_trakt_get", lambda: None)
+    monkeypatch.setattr("plextraktsync.decorators.rate_limit.sleep", lambda seconds: sleep_calls.append(seconds))
+
+    assert lookup.table[1][1].number == 1
+    assert lookup.tm.calls == 2
+    assert sleep_calls == [0.9]
 
 
 @pytest.mark.skip(reason="Broken in CI")
