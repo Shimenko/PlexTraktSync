@@ -109,6 +109,11 @@ watch:
   # Clients to ignore when listening Play events
   ignore_clients: ~
 
+# settings for 'watch-broker' command
+watch_broker:
+  # Scrobble owner playback locally from the broker process.
+  owner_scrobble: true
+
 xbmc-providers:
   movies: imdb
   shows: tvdb

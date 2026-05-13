@@ -559,6 +559,7 @@ Commands:
   trakt-login        Log in to Trakt Account to obtain Access Token.
   unmatched          List media that has no match in Trakt or Plex
   watch              Listen to events from Plex
+  watch-broker       Listen to Plex events as the owner-controlled...
   watched-shows      Print a table of watched shows
 ```
 
