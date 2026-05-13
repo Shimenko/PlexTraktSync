@@ -544,6 +544,7 @@ Options:
   --help                 Show this message and exit.
 
 Commands:
+  broker-client      Manage watch-broker clients
   bug-report         Create a pre-populated GitHub issue with information...
   cache              Manage and analyze Requests Cache.
   clear-collections  Clear Movies and Shows collections in Trakt
