@@ -9,6 +9,30 @@ from click import ClickException
 from plextraktsync.factory import factory
 
 
+def run_lazy_command(module_name: str, command_name: str, *args, **kwargs):
+    import importlib
+
+    module = importlib.import_module(f".commands.{module_name}", package=__package__)
+    cmd = getattr(module, command_name)
+
+    try:
+        cmd(*args, **kwargs)
+    except EOFError as e:
+        raise ClickException(f"Program requested terminal, No terminal is connected: {e}")
+    except ClickException as e:
+        from plextraktsync.factory import logging
+
+        logger = logging.getLogger(__name__)
+        logger.fatal(f"Error running {command_name} command: {str(e)}")
+    except Exception as e:
+        from plextraktsync.factory import logging
+
+        logger = logging.getLogger(__name__)
+        logger.exception(e)
+
+        raise ClickException(f"Error running {command_name} command: {str(e)}")
+
+
 def command():
     """
     Wrapper to lazy load commands when commands being executed only
@@ -18,28 +42,8 @@ def command():
         @click.command()
         @wraps(fn)
         def wrap(*args, **kwargs):
-            import importlib
-
             name = fn.__name__
-            module = importlib.import_module(f".commands.{name}", package=__package__)
-            cmd = getattr(module, name)
-
-            try:
-                cmd(*args, **kwargs)
-            except EOFError as e:
-                raise ClickException(f"Program requested terminal, No terminal is connected: {e}")
-            except ClickException as e:
-                from plextraktsync.factory import logging
-
-                logger = logging.getLogger(__name__)
-                logger.fatal(f"Error running {name} command: {str(e)}")
-            except Exception as e:
-                from plextraktsync.factory import logging
-
-                logger = logging.getLogger(__name__)
-                logger.exception(e)
-
-                raise ClickException(f"Error running {name} command: {str(e)}")
+            run_lazy_command(name, name, *args, **kwargs)
 
         return wrap
 
@@ -293,6 +297,51 @@ def watch():
     """
 
 
+@click.group(name="broker-client")
+def broker_client():
+    """
+    Manage watch-broker clients
+    """
+
+
+@broker_client.command("create")
+@click.option("--client-id", required=True, help="Broker client ID")
+@click.option("--plex-username", required=True, help="Plex username to route to this client")
+@click.option("--plex-account-id", help="Plex account ID to route to this client")
+def broker_client_create(client_id: str, plex_username: str, plex_account_id: str):
+    """
+    Create a static watch-broker client credential
+    """
+
+    run_lazy_command(
+        "broker_client",
+        "create",
+        client_id=client_id,
+        plex_username=plex_username,
+        plex_account_id=plex_account_id,
+    )
+
+
+@broker_client.command("list")
+@click.option("--show-revoked", is_flag=True, help="Include revoked clients")
+def broker_client_list(show_revoked: bool):
+    """
+    List watch-broker clients
+    """
+
+    run_lazy_command("broker_client", "list_clients", show_revoked=show_revoked)
+
+
+@broker_client.command("revoke")
+@click.argument("client_id")
+def broker_client_revoke(client_id: str):
+    """
+    Revoke a watch-broker client
+    """
+
+    run_lazy_command("broker_client", "revoke", client_id=client_id)
+
+
 @command()
 @click.argument("input", nargs=-1)
 @click.option(
@@ -369,6 +418,7 @@ def config():
 
 
 cli.add_command(bug_report)
+cli.add_command(broker_client)
 cli.add_command(cache)
 cli.add_command(clear_collections)
 cli.add_command(compare_libraries)

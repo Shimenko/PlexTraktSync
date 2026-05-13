@@ -236,6 +236,12 @@ class Factory:
         )
 
     @cached_property
+    def broker_client_registry(self):
+        from plextraktsync.watch.client_registry import BrokerClientRegistry
+
+        return BrokerClientRegistry()
+
+    @cached_property
     def logging(self):
         import logging
 
