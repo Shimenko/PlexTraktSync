@@ -294,6 +294,18 @@ def watch():
 
 
 @command()
+@click.option(
+    "--server",
+    type=str,
+    help="Plex Server name from servers.yml",
+)
+def watch_broker():
+    """
+    Listen to Plex events as the owner-controlled multi-user scrobbling broker
+    """
+
+
+@command()
 @click.argument("input", nargs=-1)
 @click.option(
     "--only_subs",
@@ -385,4 +397,5 @@ cli.add_command(sync)
 cli.add_command(trakt_login)
 cli.add_command(unmatched)
 cli.add_command(watch)
+cli.add_command(watch_broker)
 cli.add_command(watched_shows)
