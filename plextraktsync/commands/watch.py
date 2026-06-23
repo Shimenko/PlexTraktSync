@@ -16,6 +16,7 @@ def watch(server: str):
     )
     ws = factory.web_socket_listener
     updater = factory.watch_state_updater
+    updater.validate_username_filter()
 
     ws.on(ServerStarted, updater.on_start)
     ws.on(
