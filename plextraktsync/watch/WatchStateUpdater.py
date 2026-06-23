@@ -24,6 +24,9 @@ if TYPE_CHECKING:
 
 class WatchStateUpdater(SetWindowTitle):
     logger = logging.getLogger(__name__)
+    USERNAME_FILTER_ERROR = (
+        "watch.username_filter requires Plex session access; refusing to run watch because playback cannot be safely attributed"
+    )
 
     def __init__(
         self,
@@ -40,6 +43,16 @@ class WatchStateUpdater(SetWindowTitle):
         self.add_collection = config["watch"]["add_collection"]
         self.session_media = {}
 
+    @property
+    def username_filter_enabled(self):
+        return self.config["watch"]["username_filter"]
+
+    def validate_username_filter(self):
+        if not self.username_filter_enabled:
+            return
+
+        _ = self.username_filter
+
     def clamp_percent(self, percent: float) -> float:
         if percent < 0:
             return 0.0
@@ -49,15 +62,16 @@ class WatchStateUpdater(SetWindowTitle):
 
     @cached_property
     def username_filter(self):
-        if not self.config["watch"]["username_filter"]:
+        if not self.username_filter_enabled:
             return None
 
         if self.plex.has_sessions():
             # This must be username, not email
-            return self.plex.account.username
+            username = self.plex.account.username
+            if username:
+                return username
 
-        self.logger.warning("No permission to access sessions, disabling username filter")
-        return None
+        raise RuntimeError(self.USERNAME_FILTER_ERROR)
 
     @cached_property
     def ignore_clients(self):
@@ -74,7 +88,7 @@ class WatchStateUpdater(SetWindowTitle):
 
     @cached_property
     def sessions(self):
-        if not self.username_filter:
+        if not self.username_filter_enabled:
             return None
 
         from plextraktsync.plex.SessionCollection import SessionCollection
@@ -137,8 +151,10 @@ class WatchStateUpdater(SetWindowTitle):
     def on_error(self, error: Error):
         self.logger.error(error.msg)
         self.scrobblers.clear()
-        if self.sessions is not None:
-            self.sessions.clear()
+        self.session_media.clear()
+        sessions = self.__dict__.get("sessions")
+        if sessions is not None:
+            sessions.clear()
 
     def on_activity(self, activity: ActivityNotification):
         # Skip Show ands Seasons view
@@ -221,7 +237,7 @@ class WatchStateUpdater(SetWindowTitle):
             if event.client_identifier in self.ignore_clients:
                 return False
 
-        if not self.username_filter:
+        if not self.username_filter_enabled:
             return True
 
         return self.sessions[event.session_key] == self.username_filter
@@ -251,6 +267,7 @@ class WatchStateUpdater(SetWindowTitle):
 
             value = self.scrobblers[tm].stop(percent)
             del self.scrobblers[tm]
-            if self.sessions is not None:
-                del self.sessions[event.session_key]
+            sessions = self.__dict__.get("sessions")
+            if sessions is not None and event.session_key in sessions:
+                del sessions[event.session_key]
             return value
