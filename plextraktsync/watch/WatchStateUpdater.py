@@ -238,13 +238,7 @@ class WatchStateUpdater(SetWindowTitle):
         if not self.username_filter_enabled:
             return True
 
-        username = self.username_filter
-        if username is None:
-            # Non-owner: _username_filter_resolved is True → scrobble (safe)
-            # Owner: _username_filter_resolved is False → skip (fail closed)
-            return self.username_filter_resolved
-
-        return self.sessions[event.session_key] == username
+        return self.sessions[event.session_key] == self.username_filter
 
     def scrobble(self, m: Media, percent: float, event: PlaySessionStateNotification):
         tm = m.trakt
