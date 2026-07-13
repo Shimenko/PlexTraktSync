@@ -1,21 +1,15 @@
 from __future__ import annotations
 
-from trakt.core import get
+from trakt.pagination import paginate
 from trakt.utils import airs_date
 
 
-@get
 def allwatched():
-    # returns a AllShowProgress object containing all watched shows
-    data = yield "sync/watched/shows"
-    yield AllShowsProgress(data)
+    return AllShowsProgress(paginate("sync/watched/shows", extended="progress"))
 
 
-@get
 def allcollected():
-    # returns a AllShowProgress object containing all collected shows
-    data = yield "sync/collection/shows"
-    yield AllShowsProgress(data)
+    return AllShowsProgress(paginate("sync/collection/shows", extended="metadata"))
 
 
 class EpisodeProgress:
@@ -27,6 +21,7 @@ class EpisodeProgress:
         completed=False,
         last_watched_at=None,
         collected_at=None,
+        metadata=None,
     ):
         self.number = number
         self.aired = aired
@@ -41,10 +36,11 @@ class EpisodeProgress:
 
 
 class SeasonProgress:
-    def __init__(self, number=0, title=None, aired=0, completed=False, episodes=None):
+    def __init__(self, number=0, title=None, aired=0, completed=False, episodes=None, metadata=None):
         self.number = number
         self.aired = aired
         self.episodes = {}
+        episodes = episodes or []
         for episode in episodes:
             prog = EpisodeProgress(**episode)
             self.episodes[prog.number] = prog
@@ -78,6 +74,7 @@ class ShowProgress:
         next_episode=0,
         last_episode=0,
         last_collected_at=None,
+        metadata=None,
     ):
         self.aired = aired
         self.last_watched_at = last_watched_at
@@ -90,6 +87,7 @@ class ShowProgress:
         self.trakt = show["ids"]["trakt"] if show else None
         self.slug = show["ids"]["slug"] if show else None
         self.seasons = {}
+        seasons = seasons or []
         allCompleted = True
         for season in seasons:
             prog = SeasonProgress(**season)
@@ -110,6 +108,7 @@ class ShowProgress:
 class AllShowsProgress:
     def __init__(self, shows=None):
         self.shows = {}
+        shows = shows or []
         for show in shows:
             prog = ShowProgress(**show)
             self.shows[prog.trakt] = prog

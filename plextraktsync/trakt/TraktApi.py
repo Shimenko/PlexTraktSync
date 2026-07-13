@@ -75,7 +75,7 @@ class TraktApi:
     @retry()
     @flatten_list
     def liked_lists(self) -> list[TraktLikedList]:
-        for item in self.me.get_liked_lists("lists", limit=1000):
+        for item in self.me.get_liked_lists("lists", limit=100):
             tll: TraktLikedList = {
                 "listname": item["list"]["name"],
                 "username": item["list"]["user"]["username"],
@@ -84,6 +84,13 @@ class TraktApi:
                 "list_type": item["list"]["type"],
             }
             yield tll
+
+    @staticmethod
+    def get_personal_list(username: str, listname: str):
+        try:
+            return trakt.users.UserList.get(listname, username)
+        except NotFoundException as e:
+            raise ClickException(f"Unable to fetch userlist: {e}")
 
     @cached_property
     @retry_trakt_oauth
@@ -185,7 +192,10 @@ class TraktApi:
     @rate_limit()
     @retry()
     def get_ratings(self, media_type: str):
-        return self.me.get_ratings(media_type)
+        try:
+            return self.me.get_ratings(media_type)
+        except NotFoundException as e:
+            raise ClickException(f"Unable to fetch ratings: {e}")
 
     @retry_trakt_oauth
     @rate_limit()
@@ -206,7 +216,7 @@ class TraktApi:
         else:
             raise RuntimeError(f"mark_watched: Unsupported media type: {m.media_type.rstrip('s')} for '{m.title}'")
 
-        # Add partial object to conserve memory
+        # Add a partial object to conserve memory
         partial = PartialTraktMedia.create(m, watched_at=time)
         self.queue.add_to_history(partial)
 

@@ -24,9 +24,7 @@ if TYPE_CHECKING:
 
 class WatchStateUpdater(SetWindowTitle):
     logger = logging.getLogger(__name__)
-    USERNAME_FILTER_ERROR = (
-        "watch.username_filter requires Plex session access; refusing to run watch because playback cannot be safely attributed"
-    )
+    USERNAME_FILTER_ERROR = "watch.username_filter requires Plex session access; refusing to run watch because playback cannot be safely attributed"
 
     def __init__(
         self,
@@ -240,7 +238,13 @@ class WatchStateUpdater(SetWindowTitle):
         if not self.username_filter_enabled:
             return True
 
-        return self.sessions[event.session_key] == self.username_filter
+        username = self.username_filter
+        if username is None:
+            # Non-owner: _username_filter_resolved is True → scrobble (safe)
+            # Owner: _username_filter_resolved is False → skip (fail closed)
+            return self.username_filter_resolved
+
+        return self.sessions[event.session_key] == username
 
     def scrobble(self, m: Media, percent: float, event: PlaySessionStateNotification):
         tm = m.trakt
